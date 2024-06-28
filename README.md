@@ -36,15 +36,32 @@ WHERE length > (SELECT AVG(length) FROM sakila.film);#Условие выбор�
 
 
 ### Задание 3
-
+Получите информацию, за какой месяц была получена наибольшая сумма платежей, и добавьте информацию по количеству аренд за этот месяц.
 
 ```sql
-
+WITH MonthPay AS ( #вычисляет сумму платежей для каждого месяца
+SELECT
+DATE_FORMAT(p.payment_date, '%Y-%m') AS pay_month,
+SUM(p.amount) AS total_payments
+FROM sakila.payment p
+GROUP BY DATE_FORMAT(p.payment_date, '%Y-%m')
+),
+MaxPaymentMonth AS (  #Определяем месяц с наибольшей суммой платежей, используя RANK() для ранжирования по сумме платежей
+SELECT pay_month, total_payments,
+RANK() OVER (ORDER BY total_payments DESC) AS pay_rank
+FROM MonthPay
+)
+SELECT 
+mp.pay_month,
+mp.total_payments,
+COUNT(r.rental_id) AS rental_count
+FROM MaxPaymentMonth mp
+INNER JOIN sakila.rental r ON DATE_FORMAT(r.rental_date, '%Y-%m') = mp.pay_month #присоединяем таблицу аренд для подсчета количества аренд (rental_count) в месяце с наибольшей суммой платежей
+WHERE mp.pay_rank = 1
+GROUP BY mp.pay_month, mp.total_payments
+ORDER BY mp.pay_month;
 ```
-
-`При необходимости прикрепитe сюда скриншоты
-![Название скриншота](ссылка на скриншот)`
+![image](https://github.com/dimindrol/SQL.P2-pergunov/assets/103885836/b9c662fd-2ad4-4a5d-94ca-611c7ede9261)
 
 
-`При необходимости прикрепитe сюда скриншоты
-![Название скриншота](ссылка на скриншот)`
+
